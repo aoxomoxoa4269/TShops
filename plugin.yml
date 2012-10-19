@@ -1,0 +1,15 @@
+name: TShops
+main: t00thpick1.TShops
+version: 1.0
+author: t00thpick1
+depend: [Vault]
+commands:
+   tshop:
+      Description: Does stuff
+permissions:
+    tshops.create:
+        description: Ability to create shop
+        default: false
+    tshops.admin:
+        description: Full access
+        default: false
