@@ -56,7 +56,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import com.bekvon.bukkit.residence.Residence;
 import com.griefcraft.lwc.LWC;
 
-public class TShops extends JavaPlugin implements Listener{
+public class TShops extends JavaPlugin implements Listener {
+	//TODO Implement limit permissions
+	//TODO Implement Give/Take money signs
     private String user;
     private String pass;
     private String url;
@@ -1186,20 +1188,22 @@ public class TShops extends JavaPlugin implements Listener{
 				tUnlink.remove(player.getName());
 				if(!tLink.containsKey(player.getName())) {
 					tLink.put(player.getName(), null);
+					player.sendMessage(ChatColor.GOLD + "Punch a sign to begin to link it!");
+					player.sendMessage(ChatColor.GOLD + "Type /tshop link again to cancel");
 				} else {
 					tLink.remove(player.getName());
 				}
-				player.sendMessage(ChatColor.GOLD + "Punch a sign to begin to link it!");
 				return true;
 			}
 			if(args[0].equalsIgnoreCase("unlink") && (player.hasPermission("tshop.create") || player.hasPermission("tshop.admin"))) {
 				tLink.remove(player.getName());
 				if(!tUnlink.contains(player.getName())) {
 					tUnlink.add(player.getName());
+					player.sendMessage(ChatColor.GOLD + "Punch a chest or sign to unlink it!");
+					player.sendMessage(ChatColor.GOLD + "Type /tshop unlink again to cancel");
 				} else { 
 					tUnlink.remove(player.getName());
 				}
-				player.sendMessage(ChatColor.GOLD + "Punch a chest to unlink it from all signs!");
 				return true;
 			}
 			if(args[0].equalsIgnoreCase("search") && args.length == 2) {
