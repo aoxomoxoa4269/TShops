@@ -59,6 +59,7 @@ import com.griefcraft.lwc.LWC;
 public class TShops extends JavaPlugin implements Listener {
 	//TODO Implement limit permissions
 	//TODO Implement Give/Take money signs
+	//TODO Split protection checks into own classes
     private String user;
     private String pass;
     private String url;
