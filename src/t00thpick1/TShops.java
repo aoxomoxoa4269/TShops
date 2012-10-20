@@ -88,7 +88,7 @@ public class TShops extends JavaPlugin implements Listener {
             try {
                 createTables();
             } catch (SQLException e) {
-                System.out.println("Error with TShop's SQL Connection");
+                this.log.severe("Error with TShop's SQL Connection");
                 e.printStackTrace();
             }
             Signs = loadSigns();
@@ -135,7 +135,7 @@ public class TShops extends JavaPlugin implements Listener {
         try {
             connect();
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
             return false;
         }
@@ -165,7 +165,7 @@ public class TShops extends JavaPlugin implements Listener {
             }
             remove.clear();
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
         }
         try {
@@ -183,7 +183,7 @@ public class TShops extends JavaPlugin implements Listener {
                 result.put(loading.get(id), sign);
             }
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
         }
         return result;
@@ -308,7 +308,7 @@ public class TShops extends JavaPlugin implements Listener {
         try {
             SQLupdate(query);
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
         }
     }
@@ -556,13 +556,13 @@ public class TShops extends JavaPlugin implements Listener {
         if(tSign.getType().equals("trade")) {
             player.sendMessage(ChatColor.GOLD + "You have traded:");
         }
-        if(tSign.getType().equals("give") || tSign.getType().equals("sell")) {
+        if(tSign.getType().equals("give") || tSign.getType().equals("sell") || tSign.getType().equals("trade")) {
             player.sendMessage(ChatColor.GOLD + "" + tSign.getItemStackOne().getAmount() + " " + getItemName(tSign.getItemStackOne()));
         }
         if(tSign.getType().equals("trade")) {
             player.sendMessage(ChatColor.GOLD + "in exchange for:");
         }
-        if(tSign.getType().equals("buy") || tSign.getType().equals("take")) {
+        if(tSign.getType().equals("buy") || tSign.getType().equals("take") || tSign.getType().equals("trade")) {
             player.sendMessage(ChatColor.GOLD + "" + tSign.getItemStackTwo().getAmount() + " " + getItemName(tSign.getItemStackTwo()));
         }
         if(tSign.getType().equals("sell") || tSign.getType().equals("buy")) {
@@ -651,7 +651,7 @@ public class TShops extends JavaPlugin implements Listener {
         try {
             SQLupdate(query);
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
         }
     }
@@ -712,7 +712,7 @@ public class TShops extends JavaPlugin implements Listener {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
         }
     }
@@ -831,7 +831,7 @@ public class TShops extends JavaPlugin implements Listener {
                 player.sendMessage(ChatColor.RED + "That sign and chest are already linked!");
             }
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
         }
     }
@@ -855,7 +855,7 @@ public class TShops extends JavaPlugin implements Listener {
                 player.sendMessage(ChatColor.GOLD + "You have successfully unlinked that chest from your signs!");
             }
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
         }
     }
@@ -877,7 +877,7 @@ public class TShops extends JavaPlugin implements Listener {
                 player.sendMessage(ChatColor.GOLD + "You have successfully unlinked that chest from all signs!");
             }
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
         }
     }
@@ -891,7 +891,7 @@ public class TShops extends JavaPlugin implements Listener {
             }
             updateSign(sign);
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
         }
     }
@@ -965,7 +965,7 @@ public class TShops extends JavaPlugin implements Listener {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
         }
     }
@@ -990,7 +990,7 @@ public class TShops extends JavaPlugin implements Listener {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
         }
     }
@@ -1014,7 +1014,7 @@ public class TShops extends JavaPlugin implements Listener {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
         }
     }
@@ -1132,7 +1132,7 @@ public class TShops extends JavaPlugin implements Listener {
             SQLupdate(query3);
             Signs.remove(loc);
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
         }
     }
@@ -1150,7 +1150,7 @@ public class TShops extends JavaPlugin implements Listener {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("Error with TShop's SQL Connection");
+            this.log.severe("Error with TShop's SQL Connection");
             e.printStackTrace();
         }
         return (Integer) null;
