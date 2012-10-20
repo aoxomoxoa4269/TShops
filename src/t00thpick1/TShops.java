@@ -247,19 +247,34 @@ public class TShops extends JavaPlugin implements Listener{
  			sign.setLine(i, line);
  			i++;
  		}
-    	if(player.hasPermission("tshop.create") && !isGlobalSign(sign)) {
+    	if(!isGlobalSign(sign)) {
     		TSign sig = new TSign(sign, player.getName());
     		if(sig.isValid()) {
-    			createShopSign(sign, player.getName());
-    			player.sendMessage(ChatColor.GOLD + "You have succesfully created a TShop Sign Store");
-    			player.sendMessage(ChatColor.GOLD + "Now you need to link it to your chest(s)");
+    			if(player.hasPermission("tshop.create")) {
+    				createShopSign(sign, player.getName());
+    				player.sendMessage(ChatColor.GOLD + "You have succesfully created a TShop Sign Store");
+    				player.sendMessage(ChatColor.GOLD + "Now you need to link it to your chest(s)");
+    				sign.setLine(3, "<unlinked>");
+    			} else {
+    				player.sendMessage(ChatColor.GOLD + "Insufficient permissions");
+    				for(int c = 0; c < 4; c++) {
+    					sign.setLine(c, "");
+    				}
+    			}
     		}
     	}
-		if(isGlobalSign(sign) && player.hasPermission("tshop.admin")) {
+		if(isGlobalSign(sign)) {
     		TSign sig = new TSign(sign, (String)null);
 			if(sig.isValid()) {
-				createShopSign(sign, "Server Sign");
-				player.sendMessage(ChatColor.GOLD + "You have succesfully created a TShop Global Sign Store");
+				if(player.hasPermission("tshop.admin")){
+					createShopSign(sign, "Server Sign");
+					player.sendMessage(ChatColor.GOLD + "You have succesfully created a TShop Global Sign Store");
+				} else {
+					player.sendMessage(ChatColor.GOLD + "Insufficient permissions");
+					for(int c = 0; c < 4; c++) {
+						sign.setLine(c, "");
+					}
+				}
 			}
 		}
     }
@@ -278,11 +293,11 @@ public class TShops extends JavaPlugin implements Listener{
 		String type = sig.getType();
 		String query = null;
 		if(type.equals("buy")) {
-			query = "INSERT INTO tshopsigns (x ,y ,z , world, cashflow, firstItem, type, firstQuantity, owner) VALUES ('"+x+"', '"+y+"', '"+z+"', '"+world+"', '"+cashflow+"', '"+item1+"', "+type+", '"+quantity1+"', '"+owner+"')";
+			query = "INSERT INTO tshopsigns (x ,y ,z , world, cashflow, firstItem, type, firstQuantity, owner) VALUES ('" + x + "', '" + y + "', '" + z + "', '" + world + "', '" + cashflow + "', '" + item1 + "', " + type + ", '" + quantity1 + "', '" + owner + "')";
 		} else if (type.equals("sell")) {
-			query = "INSERT INTO tshopsigns (x ,y ,z , world, cashflow, secondItem, type, secondQuantity, owner) VALUES ('"+x+"', '"+y+"', '"+z+"', '"+world+"', '"+cashflow+"', '"+item2+"', "+type+", '"+quantity2+"', '"+owner+"')";
+			query = "INSERT INTO tshopsigns (x ,y ,z , world, cashflow, secondItem, type, secondQuantity, owner) VALUES ('" + x + "', '" + y + "', '" + z + "', '" + world + "', '" + cashflow + "', '" + item2 + "', " + type + ", '" + quantity2 + "', '" + owner + "')";
 		} else if (type.equals("trade")) {
-			query = "INSERT INTO tshopsigns (x ,y ,z , world, firstItem, firstQuantity, cashflow, secondItem, type, secondQuantity, owner) VALUES ('"+x+"', '"+y+"', '"+z+"', '"+world+"', '"+item1+"', '"+quantity1+"', '"+cashflow+"', '"+item2+"', "+type+", '"+quantity2+"', '"+owner+"')";
+			query = "INSERT INTO tshopsigns (x ,y ,z , world, firstItem, firstQuantity, cashflow, secondItem, type, secondQuantity, owner) VALUES ('" + x + "', '" + y + "', '" + z + "', '" + world + "', '" + item1 + "', '" + quantity1 + "', '" + cashflow + "', '" + item2 + "', " + type + ", '" + quantity2 + "', '" + owner + "')";
 		}
 		List<Location> list = new ArrayList<Location>();
 		Signs.put(loc, new StoredSign(owner, list));
@@ -301,7 +316,7 @@ public class TShops extends JavaPlugin implements Listener{
 		stmt.executeUpdate(query);
 	}
 	@EventHandler(priority = EventPriority.NORMAL)
-	public void onSignClick(PlayerInteractEvent event) {
+	public void onSignOrChestClick(PlayerInteractEvent event) {
     	if(event.isCancelled() || (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.LEFT_CLICK_BLOCK)) {
     		return;
     	}
@@ -322,7 +337,7 @@ public class TShops extends JavaPlugin implements Listener{
     					}
     				}
     				return;
-    			}  
+    			}
     		}
         	if(tLink.containsKey(player.getName())) {
         		if(block.getTypeId() == 68 || block.getTypeId() == 63) {
@@ -331,6 +346,18 @@ public class TShops extends JavaPlugin implements Listener{
         				if(getShopSign(sign).getPlayer().equalsIgnoreCase(player.getName()) && !isGlobalSign(sign)) {
         					tLink.put(player.getName(), sign);
         					player.sendMessage(ChatColor.GOLD + "Now punch a chest to link it to that sign!");
+        					return;
+        				} else {
+        					player.sendMessage(ChatColor.RED + "That is not your sign!");
+        					return;
+        				}
+        			}
+        			if(tUnlink.contains(player.getName())) {
+        				Sign sign = (Sign)block.getState();
+        				if(getShopSign(sign).getPlayer().equalsIgnoreCase(player.getName())) {
+        					tUnlink.remove(player.getName());
+        					unlinkSign(sign);
+        					player.sendMessage(ChatColor.GOLD + "Unlinking sign from all chests!");
         					return;
         				} else {
         					player.sendMessage(ChatColor.RED + "That is not your sign!");
@@ -347,19 +374,23 @@ public class TShops extends JavaPlugin implements Listener{
         			return;
         		}
         		String linker = player.getName();
-        		if(chest.getBlock().getRelative(BlockFace.EAST).getTypeId() == 54) {
-        			linkChest(linker, null, sign, (Chest)chest.getBlock().getRelative(BlockFace.EAST).getState());
+        		if(checkTotal(getShopSign(sign).getChestLocations()) < 10) {
+        			if(chest.getBlock().getRelative(BlockFace.EAST).getTypeId() == 54) {
+        				linkChest(linker, null, sign, (Chest)chest.getBlock().getRelative(BlockFace.EAST).getState());
+        			}
+        			if(chest.getBlock().getRelative(BlockFace.NORTH).getTypeId() == 54) {
+        				linkChest(linker, null, sign, (Chest)chest.getBlock().getRelative(BlockFace.NORTH).getState());
+        			}
+        			if(chest.getBlock().getRelative(BlockFace.WEST).getTypeId() == 54) {
+        				linkChest(linker, null, sign, (Chest)chest.getBlock().getRelative(BlockFace.WEST).getState());
+        			}
+        			if(chest.getBlock().getRelative(BlockFace.SOUTH).getTypeId() == 54) {
+        				linkChest(linker, null, sign, (Chest)chest.getBlock().getRelative(BlockFace.SOUTH).getState());
+        			}
+        			linkChest(linker, player, sign, chest);
+        		} else {
+        			player.sendMessage(ChatColor.RED + "That sign has reached its maximum amount of linked chests");
         		}
-        		if(chest.getBlock().getRelative(BlockFace.NORTH).getTypeId() == 54) {
-        			linkChest(linker, null, sign, (Chest)chest.getBlock().getRelative(BlockFace.NORTH).getState());
-        		}
-        		if(chest.getBlock().getRelative(BlockFace.WEST).getTypeId() == 54) {
-        			linkChest(linker, null, sign, (Chest)chest.getBlock().getRelative(BlockFace.WEST).getState());
-        		}
-        		if(chest.getBlock().getRelative(BlockFace.SOUTH).getTypeId() == 54) {
-        			linkChest(linker, null, sign, (Chest)chest.getBlock().getRelative(BlockFace.SOUTH).getState());
-        		}
-        		linkChest(linker, player, sign, chest);
         		return;
         	}
         	if(block.getTypeId() == 54 && tUnlink.contains(player.getName())) {
@@ -388,6 +419,23 @@ public class TShops extends JavaPlugin implements Listener{
     	Sign sign = (Sign)block.getState();
     	processTransaction(player,sign);
     }
+	private int checkTotal(List<Location> chestLocations) {
+		int doub = 0;
+		int sing = 0;
+		for(Location loc: chestLocations) {
+			boolean doubl = false;
+			for(Location lo: chestLocations) {
+				if (loc.getWorld() == lo.getWorld() && loc.distance(lo) == 1) {
+					doub++;
+					doubl = true;
+				}
+			}
+			if(!doubl){
+				sing++;
+			}
+		}
+		return (sing + (doub / 2));
+	}
 	public boolean hasResidencePerms(Player player, Chest chest) {
 		return Residence.getPermsByLoc(chest.getLocation()).playerHas(player.getName(), player.getWorld().getName(), "container", true);
 	}
@@ -478,12 +526,12 @@ public class TShops extends JavaPlugin implements Listener{
 			if(!isGlobalSign(sign)) {
 				inv2.addItem(tSign.getItemStackTwo());
 				if(tSign.getCashFlow() < 0) {
-					chargeAccount(tSign.getPlayer(), -tSign.getCashFlow());
+					chargeAccount(tSign.getPlayer(), Math.abs(tSign.getCashFlow()));
 				}
 			}
 			takeItem(inv, tSign.getItemStackTwo());
 			if(tSign.getCashFlow() < 0) {
-				creditAccount(player.getName(), -tSign.getCashFlow());
+				creditAccount(player.getName(), Math.abs(tSign.getCashFlow()));
 			}
 		}
     	player.updateInventory();
@@ -692,24 +740,26 @@ public class TShops extends JavaPlugin implements Listener{
     	}
     }
     public void updateSign(Sign sign) {
-    	int Stock = getStock(getShopSign(sign));
-    	if(getShopSign(sign).getItemStackOne() != null) {
-    		sign.setLine(3, "Stock: "+Stock);
+    	TSign sig = getShopSign(sign);
+    	int Stock = getStock(sig);
+    	int Room = getRoom(sig);
+    	if(sig.getType().equals("sell") || sig.getType().equals("take")) {
+    		sign.setLine(3, "Stock: " + Stock);
+    	} else if (sig.getType().equals("buy") || sig.getType().equals("give")) {
+    		sign.setLine(3, "Room:" + Room);
+    	} else {
+    		sign.setLine(3, "Stock:" + Stock + "|Room:" + Room);
     	}
     	sign.update();
     }
     public void updateSign(Location loc) {
     	Sign sign = (Sign)loc.getBlock().getState();
-    	int Stock = getStock(getShopSign(sign));
-    	if(getShopSign(sign).getItemStackOne() != null) {
-    		sign.setLine(3, "Stock: "+Stock);
-    	}
-    	sign.update();
+    	updateSign(sign);
     }
     public int getStock(TSign sign) {
     	int total = 0;
     	for(Chest chest: sign.getLinkedChests()) {
-        	total+=getStock(chest, sign.getItemStackOne());
+        	total += getStock(chest, sign.getItemStackOne());
     	}
     	return total;
     }
@@ -720,6 +770,26 @@ public class TShops extends JavaPlugin implements Listener{
     			if(items.getType() == item.getType() && items.getDurability() == item.getDurability()) {
     				total += items.getAmount();
     			}
+    		}
+    	}
+    	return (int)(total/item.getAmount());
+    }
+    public int getRoom(TSign sign) {
+    	int total = 0;
+    	for(Chest chest: sign.getLinkedChests()) {
+        	total += getRoom(chest, sign.getItemStackTwo());
+    	}
+    	return total;
+    }
+    public int getRoom(Chest chest, ItemStack item) {
+    	int total = 0;
+    	for(ItemStack items: chest.getBlockInventory().getContents()) {
+    		if(items != null) {
+    			if(items.getType() == item.getType() && items.getDurability() == item.getDurability()) {
+    				total += items.getMaxStackSize() - items.getAmount();
+    			}
+    		} else {
+    			total += item.getMaxStackSize();
     		}
     	}
     	return (int)(total/item.getAmount());
@@ -802,6 +872,20 @@ public class TShops extends JavaPlugin implements Listener{
 				tUnlink.remove(player.getName());
 				player.sendMessage(ChatColor.GOLD + "You have successfully unlinked that chest from all signs!");
 			}
+		} catch (SQLException e) {
+			System.out.println("Error with TShop's SQL Connection");
+			e.printStackTrace();
+		}
+	}
+	public void unlinkSign(Sign sign) {
+		try {
+			int id = getId(sign);
+			String query = "DELETE FROM tshopchests WHERE id = '" + id + "'";
+			SQLupdate(query);
+			for(Location loc: Signs.get(sign.getLocation()).getChestLocations()) {
+				Signs.get(sign.getLocation()).removeChest(loc);
+			}
+			updateSign(sign);
 		} catch (SQLException e) {
 			System.out.println("Error with TShop's SQL Connection");
 			e.printStackTrace();
@@ -940,10 +1024,6 @@ public class TShops extends JavaPlugin implements Listener{
     	if(block.getTypeId() == 54) {
     		Chest chest = (Chest)block.getState();
     		Sign sign = null;
-    		if(!hasResidencePerms(player, chest) || !hasLWCPerms(player, chest)) {
-    			player.sendMessage(ChatColor.RED + "That chest is protected!");
-    			return;
-    		}
     		if(chest.getBlock().getRelative(BlockFace.EAST).getTypeId() == 54) {
     			for(StoredSign sig: getLinkedSigns((Chest)chest.getBlock().getRelative(BlockFace.EAST).getState())) {
     				for(Location loc: Signs.keySet()) {
@@ -951,6 +1031,7 @@ public class TShops extends JavaPlugin implements Listener{
     						sign = (Sign)loc.getBlock().getState();
     			    		String linker = getShopSign(sign).getPlayer();
     						linkChest(linker, null, sign, chest);
+    						player.sendMessage(ChatColor.GOLD + "The adjacent linked chest has now been converted to a linked double chest");
     					}
     				}
     			}
@@ -962,6 +1043,7 @@ public class TShops extends JavaPlugin implements Listener{
     						sign = (Sign)loc.getBlock().getState();
     			    		String linker = getShopSign(sign).getPlayer();
     						linkChest(linker, null, sign, chest);
+    						player.sendMessage(ChatColor.GOLD + "The adjacent linked chest has now been converted to a linked double chest");
     					}
     				}
     			}
@@ -973,6 +1055,7 @@ public class TShops extends JavaPlugin implements Listener{
     						sign = (Sign)loc.getBlock().getState();
     			    		String linker = getShopSign(sign).getPlayer();
     						linkChest(linker, null, sign, chest);
+    						player.sendMessage(ChatColor.GOLD + "The adjacent linked chest has now been converted to a linked double chest");
     					}
     				}
     			}
@@ -984,6 +1067,7 @@ public class TShops extends JavaPlugin implements Listener{
     						sign = (Sign)loc.getBlock().getState();
     			    		String linker = getShopSign(sign).getPlayer();
     						linkChest(linker, null, sign, chest);
+    						player.sendMessage(ChatColor.GOLD + "The adjacent linked chest has now been converted to a linked double chest");
     					}
     				}
     			}
@@ -1009,10 +1093,10 @@ public class TShops extends JavaPlugin implements Listener{
             	return;
             }
             if(!tsign.getPlayer().equalsIgnoreCase(player.getName()) && !player.hasPermission("tshops.admin")) {
-                    event.setCancelled(true);
-                    player.sendMessage("You can't break this!");
-                    state.update();
-                    return;
+            	event.setCancelled(true);
+            	player.sendMessage("You can't break this!");
+            	state.update();
+            	return;
             } else {
             	removeSign(sign);
             	player.sendMessage("Your Sign Shop was removed");
@@ -1068,44 +1152,10 @@ public class TShops extends JavaPlugin implements Listener{
 		return (Integer) null;
 	}
 	public void removeSign(Sign sign) {
-		Location loc = sign.getLocation();
-		int x = loc.getBlockX();
-		int y = loc.getBlockY();
-		int z = loc.getBlockZ();
-		String world = loc.getWorld().getName();
-		String query = "DELETE FROM tshopsigns WHERE x = '" + x + "' AND y = '" + y + "' AND z = '" + z + "' AND world = '" + world + "'";
-		int id = getId(sign);
-		String query2 = "DELETE FROM tshopchests WHERE sign = '" + id + "'";
-		String query3 = "DELETE FROM tshophistory WHERE sign = '" + id + "'";
-		try {
-			SQLupdate(query);
-			SQLupdate(query2);
-			SQLupdate(query3);
-			Signs.remove(loc);
-		} catch (SQLException e) {
-			System.out.println("Error with TShop's SQL Connection");
-			e.printStackTrace();
-		}
+		removeSign(sign.getLocation());
 	}
 	public int getId(Sign sign) {
-		Location loc = sign.getLocation();
-		int x = loc.getBlockX();
-		int y = loc.getBlockY();
-		int z = loc.getBlockZ();
-		String world = loc.getWorld().getName();
-		try {
-			String query = "SELECT id FROM tshopsigns WHERE x = '" + x + "' AND y = '" + y + "' AND z = '" + z + "' AND world = '" + world + "'";
-			ResultSet rs = resultSet(query);
-			while(rs.next()) {
-				if(rs.getObject("id") != null) {
-					return rs.getInt("id");
-				}
-			}
-		} catch (SQLException e) {
-			System.out.println("Error with TShop's SQL Connection");
-			e.printStackTrace();
-		}
-		return (Integer) null;
+		return getId(sign.getLocation());
 	}
 	public ResultSet resultSet(String query) throws SQLException {
 		if(!conn.isValid(1)) {
@@ -1146,7 +1196,7 @@ public class TShops extends JavaPlugin implements Listener{
 				tLink.remove(player.getName());
 				if(!tUnlink.contains(player.getName())) {
 					tUnlink.add(player.getName());
-				} else {
+				} else { 
 					tUnlink.remove(player.getName());
 				}
 				player.sendMessage(ChatColor.GOLD + "Punch a chest to unlink it from all signs!");
